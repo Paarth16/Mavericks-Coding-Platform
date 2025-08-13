@@ -31,11 +31,7 @@ const Hero = () => {
             <Button 
               size="lg" 
               className="bg-gradient-primary hover:shadow-glow transition-all duration-300 group"
-              onClick={() => {
-                document.getElementById('coding-problems')?.scrollIntoView({ 
-                  behavior: 'smooth' 
-                });
-              }}
+              onClick={() => window.open("/coding.html")}
             >
               Start Coding Now
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
