@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Code Lounge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #problem-description p, #problem-description li {
+            margin-bottom: 0.75rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white">AI Code Lounge</h1>
+            <p class="text-gray-400 mt-2">Generate a DSA problem, write your solution, and get instant AI-powered feedback.</p>
+        </header>
+
+        <!-- Step 1: Problem Generation -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-white">1. Generate a Problem</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="topic" class="block text-sm font-medium text-gray-300 mb-1">Topic</label>
+                    <select id="topic" class="w-full bg-gray-700 border-gray-600 text-white rounded-md p-2 focus:ring-2 focus:ring-blue-500">
+                        <option>Arrays</option>
+                        <option>Strings</option>
+                        <option>Hash Maps</option>
+                        <option>Linked Lists</option>
+                        <option>Binary Trees</option>
+                        <option>Graphs</option>
+                        <option>Dynamic Programming</option>
+                        <option>Two Pointers</option>
+                        <option>Sliding Window</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="difficulty" class="block text-sm font-medium text-gray-300 mb-1">Difficulty</label>
+                    <select id="difficulty" class="w-full bg-gray-700 border-gray-600 text-white rounded-md p-2 focus:ring-2 focus:ring-blue-500">
+                        <option>Easy</option>
+                        <option selected>Medium</option>
+                        <option>Hard</option>
+                    </select>
+                </div>
+                <div class="self-end">
+                    <button id="generate-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">
+                        Generate Problem
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Problem Display Area -->
+        <div id="problem-container" class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8 hidden">
+            <div id="problem-loader" class="flex justify-center items-center hidden">
+                <div class="loader"></div>
+            </div>
+            <div id="problem-content">
+                <h2 id="problem-title" class="text-2xl font-bold text-white mb-3"></h2>
+                <div id="problem-description" class="text-gray-300 prose prose-invert"></div>
+                <h3 class="text-lg font-semibold mt-4 mb-2 text-white">Examples:</h3>
+                <div id="problem-examples" class="space-y-3"></div>
+                 <h3 class="text-lg font-semibold mt-4 mb-2 text-white">Constraints:</h3>
+                <ul id="problem-constraints" class="list-disc list-inside text-gray-300"></ul>
+            </div>
+        </div>
+        
+        <!-- Step 2: Your Solution -->
+        <div id="solution-section" class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8 hidden">
+            <h2 class="text-2xl font-semibold mb-4 text-white">2. Your Solution</h2>
+            <textarea id="solution-code" class="w-full h-64 bg-gray-900 text-gray-200 p-4 rounded-md font-mono text-sm border border-gray-700 focus:ring-2 focus:ring-blue-500" placeholder="Paste your Python solution here..."></textarea>
+            <button id="analyze-btn" class="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">
+                Analyze Solution
+            </button>
+        </div>
+
+        <!-- Step 3: AI Analysis -->
+        <div id="analysis-container" class="bg-gray-800 p-6 rounded-lg shadow-lg hidden">
+             <div id="analysis-loader" class="flex justify-center items-center hidden">
+                <div class="loader"></div>
+            </div>
+            <div id="analysis-content" class="prose prose-invert max-w-none text-gray-300">
+                <!-- AI analysis will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const OPENROUTER_API_KEY = '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'; // IMPORTANT: PASTE YOUR KEY HERE
+        
+        // --- DOM Elements ---
+        const generateBtn = document.getElementById('generate-btn');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const topicSelect = document.getElementById('topic');
+        const difficultySelect = document.getElementById('difficulty');
+        
+        const problemContainer = document.getElementById('problem-container');
+        const problemLoader = document.getElementById('problem-loader');
+        const problemContent = document.getElementById('problem-content');
+        const problemTitle = document.getElementById('problem-title');
+        const problemDescription = document.getElementById('problem-description');
+        const problemExamples = document.getElementById('problem-examples');
+        const problemConstraints = document.getElementById('problem-constraints');
+
+        const solutionSection = document.getElementById('solution-section');
+        const solutionCode = document.getElementById('solution-code');
+
+        const analysisContainer = document.getElementById('analysis-container');
+        const analysisLoader = document.getElementById('analysis-loader');
+        const analysisContent = document.getElementById('analysis-content');
+
+        // Store the current problem data globally for analysis
+        let currentProblemData = null;
+
+        // --- API Call Logic ---
+
+        async function generateProblem() {
+            const topic = topicSelect.value;
+            const difficulty = difficultySelect.value;
+
+            // Show loader and hide old content
+            problemContainer.classList.remove('hidden');
+            solutionSection.classList.add('hidden');
+            analysisContainer.classList.add('hidden');
+            problemLoader.classList.remove('hidden');
+            problemContent.classList.add('hidden');
+            generateBtn.disabled = true;
+            generateBtn.innerText = 'Generating...';
+
+            const promptMessages = [
+                { "role": "system", "content": "You are a system designed to create high-quality programming challenges. Provide the output in a clean, raw JSON format. Do not wrap it in markdown." },
+                { "role": "user", "content": `Generate a complete programming problem with the following requirements: Topic: ${topic}, Difficulty: ${difficulty}. The JSON object must have this structure: {"title": "...", "difficulty": "...", "description": "...", "examples": [{"input": "...", "output": "...", "explanation": "..."}], "constraints": ["..."], "function_signature": {"python": "..."}, "hidden_solution_python": "A complete and efficient Python solution.", "hidden_test_cases": [{"input": "some_input", "output": "some_output"}]}. Ensure the test cases cover edge cases and their input/output are valid JSON types (arrays, numbers, etc.), not just strings.` }
+            ];
+
+            try {
+                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': 'http://localhost',
+                        'X-Title': 'AI Code Lounge'
+                    },
+                    body: JSON.stringify({
+                        model: "mistralai/mistral-7b-instruct-v0.3",
+                        messages: promptMessages,
+                        response_format: { "type": "json_object" },
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                currentProblemData = JSON.parse(data.choices[0].message.content);
+                displayProblem(currentProblemData);
+
+            } catch (error) {
+                problemTitle.innerText = "Error";
+                problemDescription.innerHTML = `<p class="text-red-400">Failed to generate problem. Please check your API key and network connection. <br><br>${error.message}</p>`;
+                problemContent.classList.remove('hidden');
+            } finally {
+                problemLoader.classList.add('hidden');
+                generateBtn.disabled = false;
+                generateBtn.innerText = 'Generate Problem';
+            }
+        }
+
+        function displayProblem(data) {
+            problemTitle.innerText = data.title;
+            problemDescription.innerHTML = data.description.replace(/\n/g, '<br>');
+            
+            problemExamples.innerHTML = '';
+            data.examples.forEach(ex => {
+                const exampleEl = document.createElement('div');
+                exampleEl.className = 'bg-gray-700 p-3 rounded-md';
+                exampleEl.innerHTML = `
+                    <p><strong class="text-gray-300">Input:</strong> <code class="bg-gray-900 px-1 rounded">${ex.input}</code></p>
+                    <p><strong class="text-gray-300">Output:</strong> <code class="bg-gray-900 px-1 rounded">${ex.output}</code></p>
+                    ${ex.explanation ? `<p><strong class="text-gray-300">Explanation:</strong> ${ex.explanation}</p>` : ''}
+                `;
+                problemExamples.appendChild(exampleEl);
+            });
+
+            problemConstraints.innerHTML = '';
+            data.constraints.forEach(con => {
+                const constraintEl = document.createElement('li');
+                constraintEl.innerText = con;
+                problemConstraints.appendChild(constraintEl);
+            });
+
+            if (data.function_signature && data.function_signature.python) {
+                solutionCode.value = `${data.function_signature.python}\n    # Your code here\n    pass`;
+            } else {
+                solutionCode.value = '';
+            }
+
+            problemContent.classList.remove('hidden');
+            solutionSection.classList.remove('hidden');
+        }
+
+        async function analyzeSolution() {
+            const userCode = solutionCode.value;
+            if (!userCode.trim() || !currentProblemData) {
+                alert("Please generate a problem and provide a solution first.");
+                return;
+            }
+
+            if (!currentProblemData.hidden_solution_python || !currentProblemData.hidden_test_cases) {
+                alert("The generated problem is missing hidden data required for a full analysis. Please try generating a new problem.");
+                return;
+            }
+
+            analysisContainer.classList.remove('hidden');
+            analysisLoader.classList.remove('hidden');
+            analysisContent.innerHTML = '';
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerText = 'Analyzing...';
+
+            const promptMessages = [
+                 { 
+                    "role": "system", 
+                    "content": "You are an expert code evaluator for a LeetCode-style platform. Your task is to provide a detailed and structured evaluation of a user's Python code. Provide the analysis in markdown format, starting with the verdict and score." 
+                 },
+                 { 
+                    "role": "user", 
+                    "content": `
+                    You are an expert code evaluator. Please analyze the user's code against the reference solution and test cases.
+
+                    ## Problem Context
+                    - **Title**: ${currentProblemData.title}
+                    - **Description**: ${currentProblemData.description}
+
+                    ## Reference Data (for your evaluation)
+                    - **Correct Solution**:
+                    \`\`\`python
+                    ${currentProblemData.hidden_solution_python}
+                    \`\`\`
+                    - **Test Cases to Consider**:
+                    \`\`\`json
+                    ${JSON.stringify(currentProblemData.hidden_test_cases)}
+                    \`\`\`
+
+                    ## User's Submitted Code
+                    \`\`\`python
+                    ${userCode}
+                    \`\`\`
+
+                    ## Your Evaluation Task
+                    Provide the following analysis in markdown format. Start with the verdict and score.
+
+                    1.  **Verdict & Score**:
+                        * **Correctness**: Start with a clear verdict: "Correct", "Incorrect", or "Partially Correct".
+                        * **Correctness Percentage**: If not fully correct, estimate a percentage (e.g., "75% Correct") based on how many test cases it would likely pass and if the core logic is on the right track.
+                        * **Edge Case Score**: Give a score out of 10 based on how well the user's code handles the provided test cases. Briefly explain the score.
+
+                    2.  **Complexity Analysis**:
+                        * **Time Complexity**: State the Big O notation and briefly explain why.
+                        * **Space Complexity**: State the Big O notation and briefly explain why.
+
+                    3.  **Feedback & Suggestions**:
+                        * Give 2-3 bullet points with constructive feedback. Compare the user's approach to the reference solution if relevant. Suggest optimizations or style improvements.
+                    ` 
+                }
+            ];
+
+            try {
+                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': 'http://localhost',
+                        'X-Title': 'AI Code Lounge'
+                    },
+                    body: JSON.stringify({
+                        model: "mistralai/mistral-7b-instruct-v0.3",
+                        messages: promptMessages,
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const analysisText = data.choices[0].message.content;
+                
+                // Simple markdown to HTML conversion
+                let html = analysisText
+                    .replace(/### (.*)/g, '<h3 class="text-lg font-semibold mt-4 mb-2 text-white">$1</h3>')
+                    .replace(/## (.*)/g, '<h2 class="text-xl font-bold mt-4 mb-2 text-white">$1</h2>')
+                    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\* ([^*]+)/g, '<li>$1</li>')
+                    .replace(/`([^`]+)`/g, '<code class="bg-gray-900 text-sm px-1 rounded">$1</code>')
+                    .replace(/\n/g, '<br>');
+
+                analysisContent.innerHTML = html;
+
+            } catch (error) {
+                analysisContent.innerHTML = `<p class="text-red-400">Failed to analyze solution. ${error.message}</p>`;
+            } finally {
+                analysisLoader.classList.add('hidden');
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerText = 'Analyze Solution';
+            }
+        }
+
+        // --- Event Listeners ---
+        generateBtn.addEventListener('click', generateProblem);
+        analyzeBtn.addEventListener('click', analyzeSolution);
+
+    </script>
+</body>
+</html>
