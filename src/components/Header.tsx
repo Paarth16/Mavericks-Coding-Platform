@@ -35,7 +35,8 @@ const Header = () => {
             <Button variant="ghost" className="text-foreground hover:text-primary">
               Sign In
             </Button>
-            <Button className="bg-gradient-primary hover:shadow-glow transition-all duration-300">
+            <Button className="bg-gradient-primary hover:shadow-glow transition-all duration-300"
+              onClick={() => window.open("/coding.html")}>
               Get Started
             </Button>
           </div>
